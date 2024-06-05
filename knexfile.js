@@ -4,18 +4,6 @@ const path = require("path");
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
-// const knex = require("knex")({
-//   client: "sqlite3", // or 'better-sqlite3'
-//   connection: {
-//     filename: path.resolve(__dirname, "src", "database", "database.db"),
-//   },
-//   migrations: {
-//     directory: path.resolve(__dirname, "src", "database", "migrations"),
-//   },
-//   useNullAsDefault: true,
-// });
-
-// module.exports = knex;
 
 module.exports = {
   client: "sqlite3", // or 'better-sqlite3'

@@ -11,7 +11,29 @@ class UsersController {
     }
 
     // Create user in Table Users
-    await connection("users").insert({ name, email, password });
+    const [user_id] = await connection("users").insert({
+      name,
+      email,
+      password,
+    });
+
+    reponse
+      .status(201)
+      .json(
+        new ApiReturn("User created successfully", { user_id, name, email })
+      );
+  }
+
+  async delete(request, response) {
+    const { id } = request.params;
+
+    const user = await connection("users").where({ id });
+
+    if (!user.length) {
+      throw new ApiReturn("This user doesn't exists", {}, 400);
+    }
+
+    await connection("users").where({ id }).delete();
 
     reponse.status(201).json({
       status: "success",

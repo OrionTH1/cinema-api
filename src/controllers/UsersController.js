@@ -1,5 +1,6 @@
+const { hash, compare } = require("bcryptjs");
 const connection = require("../database/knex");
-const ApiError = require("../utils/ApiError");
+const ApiReturn = require("../utils/ApiReturn");
 
 class UsersController {
   async create(request, reponse) {
@@ -7,14 +8,23 @@ class UsersController {
 
     // Checks if all the data is sent
     if (!name || !email || !password) {
-      throw new ApiError("Name, email and password is required!", 400);
+      throw new ApiReturn("Name, email and password is required!", null, 400);
     }
+
+    const user = await connection("users").where({ email });
+
+    // Check if the user email already exists
+    if (user.length) {
+      throw new ApiReturn("Email already exists", null, 400);
+    }
+
+    const passwordHashed = await hash(password, 8);
 
     // Create user in Table Users
     const [user_id] = await connection("users").insert({
       name,
       email,
-      password,
+      password: passwordHashed,
     });
 
     reponse
@@ -30,15 +40,60 @@ class UsersController {
     const user = await connection("users").where({ id });
 
     if (!user.length) {
-      throw new ApiReturn("This user doesn't exists", {}, 400);
+      throw new ApiReturn("This user doesn't exists", null, 400);
     }
 
     await connection("users").where({ id }).delete();
 
-    reponse.status(201).json({
-      status: "success",
-      message: "User created successfully",
-    });
+    response.json(new ApiReturn("User deleted successfully", { id }));
+  }
+
+  async update(request, response) {
+    const { name, email, password, old_password } = request.body;
+    const { id } = request.params;
+
+    const user = await connection("users").where({ id }).first();
+
+    if (!user) {
+      throw new ApiReturn("User doesn't exists!", null, 400);
+    }
+
+    const verifyIfEmailExist = await connection("users")
+      .where({ email })
+      .first();
+
+    if (verifyIfEmailExist && verifyIfEmailExist.id != id) {
+      throw new ApiReturn("Email already exists!", null, 400);
+    }
+
+    const comparePassword = await compare(old_password, user.password);
+
+    if (!comparePassword) {
+      throw new ApiReturn("Old password is not correct!", null, 400);
+    }
+
+    const newPasswordHashed = await hash(password, 8);
+
+    user.name = name;
+    user.email = email;
+    user.password = newPasswordHashed;
+
+    await connection("users")
+      .update({
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        updated_at: connection.raw("DATETIME('now')"),
+      })
+      .where({ id });
+
+    response.json(
+      new ApiReturn("User updated successfully", {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      })
+    );
   }
 }
 

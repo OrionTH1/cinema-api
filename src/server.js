@@ -1,13 +1,9 @@
 const express = require("express");
+require("express-async-errors");
 const routes = require("./routes");
+const ApiReturn = require("./utils/ApiReturn");
 
 const app = express();
-
-// Start the server and start to sisten at the port (...)
-const port = 4000;
-app.listen(port, () => {
-  console.log("Server start at port:", port);
-});
 
 // Definy json as the defauly body type
 app.use(express.json());
@@ -16,11 +12,10 @@ app.use(express.json());
 app.use(routes);
 
 app.use((err, request, response, next) => {
-  console.log("test");
-  if (err instanceof ApiError) {
-    return response.status(err.status).json({
-      status: "error",
+  if (err instanceof ApiReturn) {
+    return response.status(err.statusCode).json({
       message: err.message,
+      data: err.data,
     });
   }
 

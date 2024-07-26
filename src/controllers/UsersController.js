@@ -35,24 +35,32 @@ class UsersController {
   }
 
   async delete(request, response) {
-    const { id } = request.params;
+    const user_id = request.user.id;
 
-    const user = await connection("users").where({ id });
+    const user = await connection("users").where({ id: user_id });
 
     if (!user.length) {
       throw new ApiReturn("This user doesn't exists", null, 400);
     }
 
-    await connection("users").where({ id }).delete();
+    await connection("users").where({ id: user_id }).delete();
 
-    response.json(new ApiReturn("User deleted successfully", { id }));
+    response.json(new ApiReturn("User deleted successfully", { id: user_id }));
   }
 
   async update(request, response) {
     const { name, email, password, old_password } = request.body;
-    const { id } = request.params;
+    const user_id = request.user.id;
 
-    const user = await connection("users").where({ id }).first();
+    if (!name || !email || !password || !old_password) {
+      throw new ApiReturn(
+        "Name, email, old password and new password id required",
+        null,
+        400
+      );
+    }
+
+    const user = await connection("users").where({ id: user_id }).first();
 
     if (!user) {
       throw new ApiReturn("User doesn't exists!", null, 400);
@@ -62,7 +70,7 @@ class UsersController {
       .where({ email })
       .first();
 
-    if (verifyIfEmailExist && verifyIfEmailExist.id != id) {
+    if (verifyIfEmailExist && verifyIfEmailExist.id != user_id) {
       throw new ApiReturn("Email already exists!", null, 400);
     }
 
@@ -85,7 +93,7 @@ class UsersController {
         password: user.password,
         updated_at: connection.raw("DATETIME('now')"),
       })
-      .where({ id });
+      .where({ id: user_id });
 
     response.json(
       new ApiReturn("User updated successfully", {

@@ -4,9 +4,10 @@ const auth = require("../config/auth");
 
 function ensureAuthenticated(request, response, next) {
   const authHeader = request.headers.authorization;
+  console.log("test");
 
   if (!authHeader) {
-    return new ApiReturn("Authorization required", null, 401);
+    throw new ApiReturn("Authorization required", null, 401);
   }
 
   const [, token] = authHeader.split(" ");
@@ -20,6 +21,8 @@ function ensureAuthenticated(request, response, next) {
 
     return next();
   } catch (e) {
-    return new ApiReturn("Authorization token doesn't exist", null, 401);
+    throw new ApiReturn("Authorization token doesn't exist", null, 401);
   }
 }
+
+module.exports = ensureAuthenticated;

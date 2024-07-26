@@ -4,9 +4,9 @@ const ApiReturn = require("../utils/ApiReturn");
 class MovieNotesControlller {
   async create(request, response) {
     const { title, description, rating, tags } = request.body;
-    const { id } = request.params;
+    const user_id = request.user.id;
 
-    const user = await connection("users").where({ id }).first();
+    const user = await connection("users").where({ id: user_id }).first();
     if (!user) {
       throw new ApiReturn("User doesn't exists", null, 400);
     }
@@ -23,13 +23,13 @@ class MovieNotesControlller {
       title,
       description,
       rating,
-      user_id: id,
+      user_id: user_id,
     });
 
     const tagsToInsert = tags.map((tag) => ({
       name: tag,
       note_id: note_id,
-      user_id: id,
+      user_id: user_id,
     }));
 
     await connection("movie_tags").insert(tagsToInsert);
@@ -44,21 +44,22 @@ class MovieNotesControlller {
 
   async show(request, response) {
     const { id } = request.params;
+    const user_id = request.user.id;
 
-    const note = await connection("movie_notes").where({ id }).first();
+    const note = await connection("movie_notes").where({ id, user_id }).first();
+
+    if (!note) {
+      throw new ApiReturn("Movie note doesn't exists", null, 400);
+    }
+
     const tags = await connection("movie_tags").where({ note_id: note.id });
 
     response.json(new ApiReturn("", { ...note, tags: [...tags] }));
   }
 
   async index(request, response) {
-    let {
-      title,
-      description,
-      rating,
-      tags: tagsFilter,
-      user_id,
-    } = request.query;
+    let { title, description, rating, tags: tagsFilter } = request.query;
+    const user_id = request.user.id;
     let notes;
     // console.log(title, description, rating, tagsFilter);
 
@@ -122,6 +123,7 @@ class MovieNotesControlller {
   async update(request, response) {
     const { title, description, rating, tags } = request.body;
     const { id } = request.params;
+    const user_id = request.user.id;
 
     if (!title || !description || !rating || !tags) {
       throw new ApiReturn(
@@ -131,7 +133,7 @@ class MovieNotesControlller {
       );
     }
 
-    const note = await connection("movie_notes").where({ id }).first();
+    const note = await connection("movie_notes").where({ id, user_id }).first();
 
     if (!note) {
       throw new ApiReturn("Movie Note doesn't exists!", null, 400);
@@ -169,8 +171,9 @@ class MovieNotesControlller {
 
   async delete(request, response) {
     const { id } = request.params;
+    const user_id = request.user.id;
 
-    const note = await connection("movie_notes").where({ id }).first();
+    const note = await connection("movie_notes").where({ id, user_id }).first();
 
     if (!note) {
       throw new ApiReturn("Movie Note doesn't exists!", null, 400);
